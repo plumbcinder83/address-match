@@ -1,0 +1,15 @@
+{
+  "name": "address-match",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Compare two US postal address strings for equivalence.",
+  "type": "module",
+  "main": "dist/cli.js",
+  "bin": {
+    "address-match": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "license": "MIT"
+}
