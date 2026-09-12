@@ -77,6 +77,16 @@ result.isMatch; // true
 - No support for PO boxes, rural routes, or military (APO/FPO) formats.
 - US addresses only; no Canadian postal code handling.
 
+## Tests
+
+```
+npm test
+```
+
+Runs the `node:test` suite in `src/address.test.ts` against the compiled
+output (`tsc` first, then `node --test dist`). No test framework beyond
+what Node and TypeScript already ship.
+
 ## Requirements
 
 Standard library only, no runtime dependencies. You need a TypeScript
