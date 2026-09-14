@@ -74,7 +74,9 @@ result.isMatch; // true
 - Addresses without commas can't reliably separate city from street name
   ("123 Main St Springfield IL 62704" parses the whole thing as one
   street line). Use commas to separate street / city / state+ZIP.
-- No support for PO boxes, rural routes, or military (APO/FPO) formats.
+- PO Box and rural/highway contract route lines ("PO Box 123", "RR 2 Box
+  45", "HC 65 Box 30") are recognized and normalized, but there's no
+  support yet for military (APO/FPO) formats.
 - US addresses only; no Canadian postal code handling.
 
 ## Tests

@@ -94,3 +94,41 @@ test("formatAddress omits a blank street line when there is no street data", () 
   assert.equal(a.street, null);
   assert.equal(formatAddress(a), "IL 62704");
 });
+
+test("PO Box is normalized and has no house number or unit", () => {
+  const a = parseAddress("PO Box 123, Springfield, IL 62704");
+  assert.equal(a.houseNumber, null);
+  assert.equal(a.street, "PO BOX 123");
+  assert.equal(a.unit, null);
+});
+
+test("PO Box with periods and spaced-out letters normalizes the same way", () => {
+  const withPeriods = parseAddress("P.O. Box 123, Springfield, IL 62704");
+  const spacedOut = parseAddress("P O Box 123, Springfield, IL 62704");
+  assert.equal(withPeriods.street, "PO BOX 123");
+  assert.equal(spacedOut.street, "PO BOX 123");
+});
+
+test("Post Office Box is recognized as an alias for PO Box", () => {
+  const a = parseAddress("Post Office Box 456, Springfield, IL 62704");
+  assert.equal(a.street, "PO BOX 456");
+});
+
+test("rural route with box number normalizes to RR form", () => {
+  const a = parseAddress("RR 2 Box 45, Springfield, IL 62704");
+  assert.equal(a.houseNumber, null);
+  assert.equal(a.street, "RR 2 BOX 45");
+});
+
+test("spelled-out rural route normalizes the same as the RR abbreviation", () => {
+  const a = parseAddress("Rural Route 2 Box 45, Springfield, IL 62704");
+  assert.equal(a.street, "RR 2 BOX 45");
+});
+
+test("highway contract route normalizes to HC form", () => {
+  const a = parseAddress("HC 65 Box 30, Springfield, IL 62704");
+  assert.equal(a.street, "HC 65 BOX 30");
+
+  const spelledOut = parseAddress("Highway Contract Route 65 Box 30, Springfield, IL 62704");
+  assert.equal(spelledOut.street, "HC 65 BOX 30");
+});

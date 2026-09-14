@@ -114,8 +114,71 @@ function extractStateZip(text: string): { state: string | null; zip: string | nu
   return { state: null, zip, remainder: rest.join(" ") };
 }
 
+// Recognizes "PO Box 123", "P.O. Box 123", "P O Box 123" and "Post Office
+// Box 123" as equivalent and normalizes them to "PO BOX 123". There is no
+// house number or unit in a box address, so both come back null.
+function normalizePoBoxLine(line: string): string | null {
+  const tokens = stripPunctuation(line).toUpperCase().split(/\s+/).filter(Boolean);
+
+  let i = 0;
+  if (tokens[i] === "PO") {
+    i += 1;
+  } else if (tokens[i] === "P" && tokens[i + 1] === "O") {
+    i += 2;
+  } else if (tokens[i] === "POST" && tokens[i + 1] === "OFFICE") {
+    i += 2;
+  } else {
+    return null;
+  }
+
+  if (tokens[i] !== "BOX" || i + 1 >= tokens.length) return null;
+  return `PO BOX ${tokens.slice(i + 1).join(" ")}`;
+}
+
+// Recognizes rural route ("RR 2 Box 45", "Rural Route 2 Box 45", "R R 2
+// Box 45") and highway contract route ("HC 65 Box 30", "Highway Contract
+// Route 65 Box 30") formats, normalizing to "RR 2 BOX 45" / "HC 65 BOX 30".
+function normalizeRuralRouteLine(line: string): string | null {
+  const tokens = stripPunctuation(line).toUpperCase().split(/\s+/).filter(Boolean);
+
+  let i = 0;
+  let prefix: string;
+  if (tokens[i] === "RR") {
+    prefix = "RR";
+    i += 1;
+  } else if (tokens[i] === "R" && tokens[i + 1] === "R") {
+    prefix = "RR";
+    i += 2;
+  } else if (tokens[i] === "RURAL" && tokens[i + 1] === "ROUTE") {
+    prefix = "RR";
+    i += 2;
+  } else if (tokens[i] === "HC") {
+    prefix = "HC";
+    i += 1;
+  } else if (tokens[i] === "HIGHWAY" && tokens[i + 1] === "CONTRACT") {
+    prefix = "HC";
+    i += 2;
+    if (tokens[i] === "ROUTE") i += 1;
+  } else {
+    return null;
+  }
+
+  if (i >= tokens.length || !/^\d+$/.test(tokens[i])) return null;
+  const routeNumber = tokens[i];
+  i += 1;
+
+  if (tokens[i] !== "BOX" || i + 1 >= tokens.length) return null;
+  return `${prefix} ${routeNumber} BOX ${tokens.slice(i + 1).join(" ")}`;
+}
+
 // Splits "123 Main St Apt 4B" style text into number/name/unit.
 function parseStreetLine(line: string): { houseNumber: string | null; street: string | null; unit: string | null } {
+  const poBox = normalizePoBoxLine(line);
+  if (poBox) return { houseNumber: null, street: poBox, unit: null };
+
+  const ruralRoute = normalizeRuralRouteLine(line);
+  if (ruralRoute) return { houseNumber: null, street: ruralRoute, unit: null };
+
   const tokens = stripPunctuation(line).split(" ").filter(Boolean);
   if (tokens.length === 0) return { houseNumber: null, street: null, unit: null };
 
