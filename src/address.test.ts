@@ -132,3 +132,38 @@ test("highway contract route normalizes to HC form", () => {
   const spelledOut = parseAddress("Highway Contract Route 65 Box 30, Springfield, IL 62704");
   assert.equal(spelledOut.street, "HC 65 BOX 30");
 });
+
+test("military unit/box line normalizes and pairs with an APO city and AE state", () => {
+  const a = parseAddress("Unit 2050 Box 4190, APO AE 09096");
+  assert.equal(a.houseNumber, null);
+  assert.equal(a.street, "UNIT 2050 BOX 4190");
+  assert.equal(a.unit, null);
+  assert.equal(a.city, "APO");
+  assert.equal(a.state, "AE");
+  assert.equal(a.zip, "09096");
+});
+
+test("PSC box line normalizes with an FPO city and AP state", () => {
+  const a = parseAddress("PSC 1234 Box 12345, FPO AP 96601");
+  assert.equal(a.street, "PSC 1234 BOX 12345");
+  assert.equal(a.city, "FPO");
+  assert.equal(a.state, "AP");
+});
+
+test("CMR box line normalizes with a DPO city and AA state", () => {
+  const a = parseAddress("CMR 456 Box 1907, DPO AA 34098");
+  assert.equal(a.street, "CMR 456 BOX 1907");
+  assert.equal(a.city, "DPO");
+  assert.equal(a.state, "AA");
+});
+
+test("military unit line with no box number still normalizes", () => {
+  const a = parseAddress("Unit 2050, APO AE 09096");
+  assert.equal(a.street, "UNIT 2050");
+});
+
+test("military and civilian addresses with matching unit/box are equivalent regardless of case", () => {
+  const a = parseAddress("unit 2050 box 4190, apo, ae 09096");
+  assert.equal(a.street, "UNIT 2050 BOX 4190");
+  assert.equal(a.state, "AE");
+});

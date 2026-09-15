@@ -71,7 +71,13 @@ const STATE_NAMES: Record<string, string> = {
   "district of columbia": "DC",
 };
 
-const VALID_STATE_CODES = new Set(Object.values(STATE_NAMES));
+// AA/AE/AP are not states but are used the same way in the state position
+// of military addresses (Armed Forces Americas/Europe/Pacific).
+const MILITARY_STATE_CODES = new Set(["AA", "AE", "AP"]);
+
+const VALID_STATE_CODES = new Set([...Object.values(STATE_NAMES), ...MILITARY_STATE_CODES]);
+
+const MILITARY_UNIT_DESIGNATORS = new Set(["UNIT", "PSC", "CMR"]);
 
 function normalizeWhitespace(s: string): string {
   return s.replace(/\s+/g, " ").trim();
@@ -171,10 +177,30 @@ function normalizeRuralRouteLine(line: string): string | null {
   return `${prefix} ${routeNumber} BOX ${tokens.slice(i + 1).join(" ")}`;
 }
 
+// Recognizes military unit/box lines ("Unit 2050 Box 4190", "PSC 1234 Box
+// 12345", "CMR 456 Box 1907") that precede an APO/FPO/DPO city and an
+// AA/AE/AP state, normalizing to "UNIT 2050 BOX 4190" style. The box
+// number is optional since some units are addressed without one.
+function normalizeMilitaryLine(line: string): string | null {
+  const tokens = stripPunctuation(line).toUpperCase().split(/\s+/).filter(Boolean);
+  if (tokens.length < 2 || !MILITARY_UNIT_DESIGNATORS.has(tokens[0])) return null;
+  if (!/^\d+$/.test(tokens[1])) return null;
+
+  const designator = tokens[0];
+  const unitNumber = tokens[1];
+  if (tokens.length === 2) return `${designator} ${unitNumber}`;
+
+  if (tokens[2] !== "BOX" || tokens.length < 4) return null;
+  return `${designator} ${unitNumber} BOX ${tokens.slice(3).join(" ")}`;
+}
+
 // Splits "123 Main St Apt 4B" style text into number/name/unit.
 function parseStreetLine(line: string): { houseNumber: string | null; street: string | null; unit: string | null } {
   const poBox = normalizePoBoxLine(line);
   if (poBox) return { houseNumber: null, street: poBox, unit: null };
+
+  const military = normalizeMilitaryLine(line);
+  if (military) return { houseNumber: null, street: military, unit: null };
 
   const ruralRoute = normalizeRuralRouteLine(line);
   if (ruralRoute) return { houseNumber: null, street: ruralRoute, unit: null };
